@@ -4,6 +4,8 @@ A lightweight, customizable window tiling manager for Windows with multi-monitor
 
 Heavily inspired by PowerToys FancyZones, CrudeZones reimplements the core functionality with added features like customizable hotkeys and zone numbering that have been requested for years. Built with Python, focusing on maximum configurability and responsiveness.
 
+### ``` Work in progres. Things will change and break occasionally while I work through bugs. Please file issues as discovered to help improve stability. ```
+
 ## Features
 
 - **Multi-monitor support** - Layouts automatically apply to all monitors
