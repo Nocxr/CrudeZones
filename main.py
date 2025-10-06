@@ -65,8 +65,12 @@ def main():
         print(f"  {zone_manager.reload_config_hotkey} -> Reload Config")
         print()
 
-        # Start drag listener
-        drag_listener = DragZoneListener(zone_manager, overlay)
+        # Start drag listener (UPDATED: pass config_manager)
+        drag_listener = DragZoneListener(
+            zone_manager, 
+            overlay, 
+            zone_manager.config_manager  # Pass the config manager
+        )
         drag_listener.start()
 
         # Start tray app (pass overlay reference)

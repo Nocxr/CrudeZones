@@ -1,22 +1,64 @@
-# hotkeys.yaml - All keyboard shortcuts
+# hotkeys.yaml - All keyboard shortcuts and behavior settings
 
-# Overlay control
-overlay_hotkey: "ctrl+alt+z"
+# ===== OVERLAY CONTROL =====
+overlay_hotkey: "ctrl+alt+`"
 
-# Window management
+# ===== MONITOR SELECTION KEYS (Stage 1 for two-stage hotkeys) =====
+# Press and HOLD monitor key, then press zone key
+monitor_keys:
+  0: "`"        # Monitor 0: Hold ` + zone key
+  1: "1"        # Monitor 1: Hold 1 + zone key
+  2: "2"        # Monitor 2: Hold 2 + zone key
+  # Add more monitors as needed
+
+# If no monitor key is pressed with a zone key, this is the fallback
+default_monitor_for_zone_keys: "context_aware"  # "context_aware", "primary", or monitor ID (0, 1, 2...)
+
+# ===== WINDOW MANAGEMENT =====
 restore_hotkey: "ctrl+alt+r"
 reload_config_hotkey: "ctrl+alt+shift+r"
 
-# Zone cycling
+# ===== ZONE CYCLING =====
 cycle_next_hotkey: "ctrl+alt+]"
 cycle_prev_hotkey: "ctrl+alt+["
 cycle_all_next_hotkey: "ctrl+alt+shift+]"
 cycle_all_prev_hotkey: "ctrl+alt+shift+["
 
-# Drag detection
-drag_show_zones_key: "shift"  # Options: shift, ctrl, alt
+# ===== DRAG BEHAVIOR CONFIGURATION =====
+drag_behavior:
+  # Which key shows overlay during drag: shift, ctrl, or alt
+  show_zones_key: "shift"
+  
+  # Enable scrolling to switch layouts while dragging
+  scroll_layout_switch_enabled: true
+  
+  # Cooldown between scroll actions (seconds)
+  scroll_cooldown_seconds: 0.30
+  
+  # Cooldown after number snap (seconds)
+  number_snap_cooldown_seconds: 0.5
+  
+  # Margin for zone hover detection (pixels)
+  zone_hover_margin_pixels: 6
+  
+  # Ignore 'full' zones when hovering
+  ignore_fullscreen_zone: true
 
-# Layout switching hotkeys
+# ===== STATE TRACKING CONFIGURATION =====
+state_tracking:
+  # Enable automatic restore when window moved manually
+  auto_restore_enabled: true
+  
+  # Minimum movement to trigger auto-restore (pixels)
+  movement_threshold_pixels: 10
+  
+  # How often to check for movement (seconds)
+  monitoring_interval_seconds: 0.1
+  
+  # Delay before clearing operation exempt status (seconds)
+  operation_exempt_delay_seconds: 2.0
+
+# ===== LAYOUT SWITCHING HOTKEYS =====
 layout_switches:
   - keys: "ctrl+alt+shift+1"
     layout: "default"
@@ -25,7 +67,15 @@ layout_switches:
   - keys: "ctrl+alt+shift+3"
     layout: "quarters"
 
-# Zone snap hotkeys
+drag_behavior:
+  show_zones_key: "shift"  # shift, ctrl, or alt
+  scroll_layout_switch_enabled: true
+  scroll_cooldown_seconds: 0.30
+  number_snap_cooldown_seconds: 0.5
+  zone_hover_margin_pixels: 6
+  ignore_fullscreen_zone: true
+
+# ===== ZONE SNAP HOTKEYS =====
 # Monitor 0 - Numpad layout (7=top-left, 8=top, 9=top-right, etc)
 zone_hotkeys:
   - keys: "ctrl+alt+kp_7"

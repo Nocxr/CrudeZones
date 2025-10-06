@@ -1,65 +1,32 @@
-# thirds.yaml - Three equal columns
-
+# layouts/default.yaml - Simple left/right split
 name: "thirds"
-description: "Three equal vertical columns"
+description: "Halves (left/right split)"
 
+# Overlay appearance
 overlay:
   color: "cyan"
   opacity: 0.3
   auto_hide_seconds: 3
 
-monitors:
-  - id: 0
-    name: "Main"
-    zones:
-      - name: "left"
-        x_percent: 0
-        y_percent: 0
-        width_percent: 33.33
-        height_percent: 100
-        respect_taskbar: true
-      
-      - name: "center"
-        x_percent: 33.33
-        y_percent: 0
-        width_percent: 33.34
-        height_percent: 100
-        respect_taskbar: true
-      
-      - name: "right"
-        x_percent: 66.67
-        y_percent: 0
-        width_percent: 33.33
-        height_percent: 100
-        respect_taskbar: true
+# Zones apply to ALL monitors by default
+zones:
+  - name: "left"
+    x_percent: 0
+    y_percent: 0
+    width_percent: 33
+    height_percent: 100
+    key: "A"
 
-  - id: 1
-    name: "Secondary"
-    zones:
-      - name: "left"
-        x_percent: 0
-        y_percent: 0
-        width_percent: 33.33
-        height_percent: 100
-        respect_taskbar: true
-      
-      - name: "center"
-        x_percent: 33.33
-        y_percent: 0
-        width_percent: 33.34
-        height_percent: 100
-        respect_taskbar: true
-      
-      - name: "right"
-        x_percent: 66.67
-        y_percent: 0
-        width_percent: 33.33
-        height_percent: 100
-        respect_taskbar: true
-      
-      - name: "full"
-        x_percent: 0
-        y_percent: 0
-        width_percent: 100
-        height_percent: 100
-        respect_taskbar: true
+  - name: "center"
+    x_percent: 33
+    y_percent: 0
+    width_percent: 33
+    height_percent: 100
+    key: "S"
+  
+  - name: "right"
+    x_percent: 66
+    y_percent: 0
+    width_percent: 34
+    height_percent: 100
+    key: "D"

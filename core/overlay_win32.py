@@ -1,4 +1,4 @@
-# overlay_win32.py - Fixed callback version
+# overlay_win32.py - Fixed callback version with zone numbers
 import threading, time, ctypes
 from ctypes import wintypes as wt
 import win32con as wc
@@ -29,13 +29,16 @@ def get_dpi_for_monitor(x, y):
 
 # ---- Simple Overlay Window with proper callback ----
 class OverlayWindow:
-    def __init__(self, mon_rect, alpha=180):
+    def __init__(self, mon_rect, alpha=180, mon_id=0):
         self.mon = mon_rect  # (x, y, w, h)
+        self.mon_id = mon_id  # Store which monitor this overlay belongs to
         self.alpha = alpha
         self.hwnd = None
         self.visible = False
         self.zones = []
         self.highlight_name = None
+        self.zone_numbers = {}  # Maps (mon_id, zone_name) -> number
+        self.zone_key_labels = {}  # {(mon_id, zone_name): "Q" / "Num1" / "2" ...}
         self._create()
 
     def _create(self):
@@ -72,16 +75,28 @@ class OverlayWindow:
             wg.ShowWindow(self.hwnd, wc.SW_HIDE)
             self.visible = False
 
-    def redraw(self, zones, highlight_name=None):
-        self.zones = zones
-        self.highlight_name = highlight_name
-        if self.visible and self.hwnd:
-            try:
-                hdc = wg.GetDC(self.hwnd)
-                self._paint_direct(hdc)
-                wg.ReleaseDC(self.hwnd, hdc)
-            except Exception as e:
-                print(f"Paint error: {e}")
+    def redraw(self):
+        """
+        Repaint THIS overlay window only. All required data is already on self:
+          - self.zones           : list[dict] each with "x","y","width","height","name"
+          - self.zone_numbers    : {(mon_id, zone_name): number}
+          - self.mon_id          : this window's monitor id
+          - self.highlight_name  : (optional) name of highlighted zone
+        """
+        # If manager set a generic 'highlight' attr, mirror it to highlight_name
+        if getattr(self, "highlight", None) is not None and not getattr(self, "highlight_name", None):
+            self.highlight_name = self.highlight
+
+        # Paint immediately to avoid relying on WM_PAINT for this transparent window
+        hdc = wg.GetDC(self.hwnd)
+        try:
+            self._paint_direct(hdc)
+        finally:
+            wg.ReleaseDC(self.hwnd, hdc)
+
+    def set_zone_numbers(self, zone_numbers):
+        """Update zone number mappings"""
+        self.zone_numbers = zone_numbers
 
     def _paint_direct(self, hdc):
         """Paint directly to DC without WM_PAINT"""
@@ -102,6 +117,12 @@ class OverlayWindow:
         gdi32.SetBkMode(hdc, wc.TRANSPARENT)
         gdi32.SetTextColor(hdc, 0x00FFFFFF)
         
+        # Create larger font for zone numbers
+        number_font = gdi32.CreateFontW(
+            72, 0, 0, 0, 700, 0, 0, 0, 0, 0, 0, 0, 0, "Arial"
+        )
+        old_font = gdi32.SelectObject(hdc, number_font)
+        
         for z in self.zones:
             rx = z["x"] - x0
             ry = z["y"] - y0
@@ -117,14 +138,33 @@ class OverlayWindow:
             gdi32.Rectangle(hdc, rx, ry, rx + rw, ry + rh)
             gdi32.SelectObject(hdc, old_brush)
             
-            # Draw label
-            text = z.get("name", "")
-            if text:
+            # Choose label: prefer per-zone key label; else the assigned number
+            zone_label = None
+            zone_name_to_find = z.get("name")
+
+            # If caller provided labels dict, try it first
+            if hasattr(self, "zone_key_labels"):
+                zone_label = self.zone_key_labels.get((self.mon_id, zone_name_to_find))
+
+            # Fallback: search number map
+            if not zone_label:
+                zone_num = None
+                for (mon_id_key, zone_name_key), num in self.zone_numbers.items():
+                    if zone_name_key == zone_name_to_find and mon_id_key == self.mon_id:
+                        zone_num = num
+                        break
+                if zone_num is not None:
+                    zone_label = str(zone_num)
+
+            # Draw label if we have one
+            if zone_label:
                 text_rect = wt.RECT(rx, ry, rx + rw, ry + rh)
-                user32.DrawTextW(hdc, text, -1, ctypes.byref(text_rect), 
+                user32.DrawTextW(hdc, zone_label, -1, ctypes.byref(text_rect),
                                 wc.DT_CENTER | wc.DT_VCENTER | wc.DT_SINGLELINE)
         
         # Cleanup
+        gdi32.SelectObject(hdc, old_font)
+        gdi32.DeleteObject(number_font)
         gdi32.SelectObject(hdc, old_pen)
         gdi32.DeleteObject(white_pen)
         gdi32.DeleteObject(highlight_brush)
@@ -142,11 +182,17 @@ class Win32OverlayManager:
         self.windows = []
         self.active = False
         self.highlight = None
+        self.zone_numbers = {}  # Maps (mon_id, zone_name) -> number
+        self.zone_key_labels = {}  # {(mon_id, zone_name): "Q", "Num1", ...}
         self._build_windows()
 
     def _build_windows(self):
         for mon in self.zm.detected_monitors:
-            ow = OverlayWindow((mon["x"], mon["y"], mon["width"], mon["height"]), self.alpha)
+            ow = OverlayWindow(
+                (mon["x"], mon["y"], mon["width"], mon["height"]),
+                self.alpha,
+                mon_id=mon["id"]
+            )
             self.windows.append(ow)
 
     def start(self):
@@ -173,9 +219,37 @@ class Win32OverlayManager:
             
             hl = None
             if self.highlight and self.highlight[0] == mon_id:
-                hl = self.highlight[1]
+                 hl = self.highlight[1]
             
-            w.redraw(zones, hl)
+            # CRITICAL: update each window's maps BEFORE calling redraw
+            w.zone_numbers = self.zone_numbers
+            w.zone_key_labels = getattr(self, "zone_key_labels", {})
+
+            # Provide everything the OverlayWindow expects during redraw:
+            w.zones = zones
+            w.highlight = hl
+            w.zones = zones
+            w.highlight_name = hl     # the window paints by checking self.highlight_name
+            w.windows = self.windows          # some OverlayWindow code references self.windows
+            w.monitor_id = mon_id             # make monitor id directly available
+            w.zm = self.zm                    # if window code reads zone manager directly
+
+            # Satisfy code paths that call self._get_monitor_id_for_window(...) on the window:
+            # Bind a small helper that returns this window's monitor id (ignores arg if passed).
+            def _ow_get_mon_id(*_args, **_kwargs):
+                return w.monitor_id
+            w._get_monitor_id_for_window = _ow_get_mon_id
+            # (Optional) Satisfy legacy code paths that might call this on the window:
+            if not hasattr(w, "_get_monitor_id_for_window"):
+                def _ow_get_mon_id(*_args, **_kwargs):
+                    return w.monitor_id
+                w._get_monitor_id_for_window = _ow_get_mon_id
+
+            try:
+                w.redraw()
+            except Exception as e:
+                # Prevent the overlay from getting stranded white if one window fails to paint
+                print(f"[CLICK ERR] {e}")
 
     def set_highlight(self, mon_id, zone_name):
         self.highlight = (mon_id, zone_name) if zone_name is not None else None

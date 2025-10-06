@@ -1,38 +1,41 @@
-# zone_manager.py
-import yaml
+# zone_manager.py (Refactored to use ConfigManager)
 import win32gui
 import win32con
-import os
-import glob
 from .monitor_detection import MonitorDetector
 from .window_state_tracker import WindowStateTracker
+from .config_manager import ConfigManager
+
 
 class ZoneManager:
     def __init__(self, config_dir='config'):
         self.config_dir = config_dir
+        
+        # Initialize config manager
+        self.config_manager = ConfigManager(config_dir)
+        self.config_manager.load_all()
+        
+        # Initialize state tracker
         self.state_tracker = WindowStateTracker()
+        
+        # Detect monitors FIRST (required by overlay)
+        self.detected_monitors = MonitorDetector.get_monitors()
+        
+        # Load configuration
         self.load_config()
     
     def load_config(self):
-        """Load configuration from YAML files"""
-        # Load hotkeys
-        hotkeys_path = os.path.join(self.config_dir, 'hotkeys.yaml')
-        with open(hotkeys_path, 'r') as f:
-            hotkeys_config = yaml.safe_load(f)
+        """Load configuration from config manager"""
+        # Reload config files
+        self.config_manager.load_all()
         
-        # Load all layouts from layouts folder
-        layouts_dir = os.path.join(self.config_dir, 'layouts')
-        self.layouts = {}
-        
-        for layout_file in glob.glob(os.path.join(layouts_dir, '*.yaml')):
-            with open(layout_file, 'r') as f:
-                layout_data = yaml.safe_load(f)
-                layout_name = layout_data.get('name', os.path.splitext(os.path.basename(layout_file))[0])
-                self.layouts[layout_name] = layout_data
+        # Get layouts
+        self.layouts = self.config_manager.layouts
+        self.active_layout = self.config_manager.active_layout
+        self.per_monitor_layouts = {}
         
         print(f"\nLoaded {len(self.layouts)} layouts: {', '.join(self.layouts.keys())}")
         
-        # Detect monitors
+        # Re-detect monitors (in case hardware changed)
         self.detected_monitors = MonitorDetector.get_monitors()
         
         print(f"\nDetected {len(self.detected_monitors)} monitor(s):")
@@ -41,34 +44,30 @@ class ZoneManager:
             print(f"  Monitor {mon['id']}: {mon['width']}x{mon['height']} at ({mon['x']}, {mon['y']}){primary}")
             print(f"    Work area: {mon['work_width']}x{mon['work_height']} at ({mon['work_x']}, {mon['work_y']})")
         
-        # Set default layout (use first available or 'default')
-        self.active_layout = 'default' if 'default' in self.layouts else list(self.layouts.keys())[0]
-        self.per_monitor_layouts = {}
         print(f"\nDefault layout: {self.active_layout}")
         
-        # Store hotkey config
-        self.config = hotkeys_config
-        self.hotkeys = hotkeys_config.get('zone_hotkeys', [])
-        self.layout_hotkeys = hotkeys_config.get('layout_switches', [])
-        self.overlay_config = self._load_overlay_config()
-        self.restore_hotkey = hotkeys_config.get('restore_hotkey', 'ctrl+alt+r')
-        self.reload_config_hotkey = hotkeys_config.get('reload_config_hotkey', 'ctrl+alt+shift+r')
+        # Get config values
+        self.overlay_config = self.config_manager.get_overlay_config()
+        wm_config = self.config_manager.get_window_management_config()
+        
+        self.restore_hotkey = wm_config['restore']
+        self.reload_config_hotkey = wm_config['reload']
+        
+        # Store full config for backward compatibility
+        self.config = {
+            'cycle_next_hotkey': wm_config['cycle_next'],
+            'cycle_prev_hotkey': wm_config['cycle_prev'],
+            'cycle_all_next_hotkey': wm_config['cycle_all_next'],
+            'cycle_all_prev_hotkey': wm_config['cycle_all_prev'],
+            'drag_show_zones_key': self.config_manager.get_drag_config()['show_zones_key']
+        }
+        
+        # Get hotkeys
+        self.hotkeys = self.config_manager.get_zone_hotkeys()
+        self.layout_hotkeys = self.config_manager.get_layout_switches()
         
         # Load zone data
         self.monitors = self._load_monitors()
-    
-    def _load_overlay_config(self):
-        """Load overlay configuration with defaults"""
-        # Try to get from current layout, fallback to defaults
-        current_layout = self.layouts.get(self.active_layout, {})
-        overlay = current_layout.get('overlay', {})
-        
-        return {
-            'hotkey': self.config.get('overlay_hotkey', 'ctrl+alt+z'),
-            'color': overlay.get('color', 'cyan'),
-            'opacity': overlay.get('opacity', 0.3),
-            'auto_hide_seconds': overlay.get('auto_hide_seconds', 3)
-        }
     
     def _load_monitors(self):
         """Parse monitor zones from layouts and calculate actual pixel values"""
@@ -85,22 +84,26 @@ class ZoneManager:
                 layout_name = self.active_layout
             
             layout_data = self.layouts[layout_name]
-            monitor_configs = layout_data.get('monitors', [])
             
-            # Find config for this monitor ID
-            monitor_config = None
-            for mc in monitor_configs:
-                if mc['id'] == mon_id:
-                    monitor_config = mc
-                    break
+            # NEW: Check for simplified format (zones at root level)
+            zone_list = layout_data.get('zones', [])
             
-            if not monitor_config:
-                print(f"Warning: Monitor {mon_id} not defined in layout '{layout_name}'. Skipping.")
+            # LEGACY: Fall back to old monitor-specific format
+            if not zone_list:
+                monitor_configs = layout_data.get('monitors', [])
+                for mc in monitor_configs:
+                    if mc['id'] == mon_id:
+                        zone_list = mc.get('zones', [])
+                        break
+            
+            if not zone_list:
+                print(f"Warning: No zones found for Monitor {mon_id} in layout '{layout_name}'. Skipping.")
                 continue
             
             monitors[mon_id] = {}
             
-            for zone in monitor_config['zones']:
+            for zone in zone_list:
+                # Default respect_taskbar to True (only need to specify if False)
                 respect_taskbar = zone.get('respect_taskbar', True)
                 
                 # Use work area if respecting taskbar
@@ -121,15 +124,21 @@ class ZoneManager:
                 zone_width = int(base_width * zone['width_percent'] / 100)
                 zone_height = int(base_height * zone['height_percent'] / 100)
                 
-                monitors[mon_id][zone['name']] = {
+                entry = {
                     'x': zone_x,
                     'y': zone_y,
                     'width': zone_width,
                     'height': zone_height
                 }
                 
+                # Carry optional YAML fields through (e.g., key)
+                if 'key' in zone:
+                    entry['key'] = zone['key']
+                
+                monitors[mon_id][zone['name']] = entry
+                                
                 print(f"  Zone '{zone['name']}' on Monitor {mon_id} ({layout_name}): "
-                    f"{zone_width}x{zone_height} at ({zone_x}, {zone_y})")
+                      f"{zone_width}x{zone_height} at ({zone_x}, {zone_y})")
         
         return monitors
     
@@ -150,6 +159,7 @@ class ZoneManager:
             return
         
         self.active_layout = layout_name
+        self.config_manager.active_layout = layout_name
         self.monitors = self._load_monitors()
         print(f"Switched default layout to: {layout_name}")
     

@@ -66,7 +66,7 @@ class WindowStateTracker:
         if hwnd:
             # Use a thread to remove after delay (allows animation to complete)
             def delayed_unmark():
-                time.sleep(0.5)  # Wait for snap animation to complete
+                time.sleep(2.0)  # Wait 2 seconds - enough time for user to release mouse after number snap
                 self.operation_exempt_hwnds.discard(hwnd)
             threading.Thread(target=delayed_unmark, daemon=True).start()
     
