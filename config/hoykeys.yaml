@@ -1,0 +1,99 @@
+# hotkeys.yaml - All keyboard shortcuts
+
+# Overlay control
+overlay_hotkey: "ctrl+alt+z"
+
+# Window management
+restore_hotkey: "ctrl+alt+r"
+reload_config_hotkey: "ctrl+alt+shift+r"
+
+# Zone cycling
+cycle_next_hotkey: "ctrl+alt+]"
+cycle_prev_hotkey: "ctrl+alt+["
+cycle_all_next_hotkey: "ctrl+alt+shift+]"
+cycle_all_prev_hotkey: "ctrl+alt+shift+["
+
+# Drag detection
+drag_show_zones_key: "shift"  # Options: shift, ctrl, alt
+
+# Layout switching hotkeys
+layout_switches:
+  - keys: "ctrl+alt+shift+1"
+    layout: "default"
+  - keys: "ctrl+alt+shift+2"
+    layout: "thirds"
+  - keys: "ctrl+alt+shift+3"
+    layout: "quarters"
+
+# Zone snap hotkeys
+# Monitor 0 - Numpad layout (7=top-left, 8=top, 9=top-right, etc)
+zone_hotkeys:
+  - keys: "ctrl+alt+kp_7"
+    monitor: 0
+    zone: "top_left"
+  
+  - keys: "ctrl+alt+kp_8"
+    monitor: 0
+    zone: "top"
+  
+  - keys: "ctrl+alt+kp_9"
+    monitor: 0
+    zone: "top_right"
+  
+  - keys: "ctrl+alt+kp_4"
+    monitor: 0
+    zone: "left"
+  
+  - keys: "ctrl+alt+kp_5"
+    monitor: 0
+    zone: "full"
+  
+  - keys: "ctrl+alt+kp_6"
+    monitor: 0
+    zone: "right"
+  
+  - keys: "ctrl+alt+kp_1"
+    monitor: 0
+    zone: "bottom_left"
+  
+  - keys: "ctrl+alt+kp_2"
+    monitor: 0
+    zone: "bottom"
+  
+  - keys: "ctrl+alt+kp_3"
+    monitor: 0
+    zone: "bottom_right"
+  
+  - keys: "ctrl+alt+kp_0"
+    monitor: 0
+    zone: "center"
+  
+  # Monitor 1 - Add Shift modifier
+  - keys: "ctrl+alt+shift+kp_4"
+    monitor: 1
+    zone: "left"
+  
+  - keys: "ctrl+alt+shift+kp_5"
+    monitor: 1
+    zone: "full"
+  
+  - keys: "ctrl+alt+shift+kp_6"
+    monitor: 1
+    zone: "right"
+  
+  - keys: "ctrl+alt+shift+kp_0"
+    monitor: 1
+    zone: "center"
+  
+  # Alternative: Regular number keys
+  - keys: "ctrl+alt+1"
+    monitor: 0
+    zone: "left"
+  
+  - keys: "ctrl+alt+2"
+    monitor: 0
+    zone: "right"
+  
+  - keys: "ctrl+alt+f"
+    monitor: 0
+    zone: "full"

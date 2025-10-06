@@ -1,0 +1,86 @@
+# quarters.yaml - 2x2 grid layout
+
+name: "quarters"
+description: "2x2 grid of equal quadrants"
+
+overlay:
+  color: "cyan"
+  opacity: 0.3
+  auto_hide_seconds: 3
+
+monitors:
+  - id: 0
+    name: "Main"
+    zones:
+      - name: "top_left"
+        x_percent: 0
+        y_percent: 0
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "top_right"
+        x_percent: 50
+        y_percent: 0
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "bottom_left"
+        x_percent: 0
+        y_percent: 50
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "bottom_right"
+        x_percent: 50
+        y_percent: 50
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "full"
+        x_percent: 0
+        y_percent: 0
+        width_percent: 100
+        height_percent: 100
+        respect_taskbar: true
+
+  - id: 1
+    name: "Secondary"
+    zones:
+      - name: "top_left"
+        x_percent: 0
+        y_percent: 0
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "top_right"
+        x_percent: 50
+        y_percent: 0
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "bottom_left"
+        x_percent: 0
+        y_percent: 50
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "bottom_right"
+        x_percent: 50
+        y_percent: 50
+        width_percent: 50
+        height_percent: 50
+        respect_taskbar: true
+      
+      - name: "full"
+        x_percent: 0
+        y_percent: 0
+        width_percent: 100
+        height_percent: 100
+        respect_taskbar: true
