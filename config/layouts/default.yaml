@@ -27,47 +27,47 @@ monitors:
         height_percent: 100
         respect_taskbar: true
       
-      - name: "top_left"
-        x_percent: 0
-        y_percent: 0
-        width_percent: 50
-        height_percent: 50
-        respect_taskbar: true
+      # - name: "top_left"
+      #   x_percent: 0
+      #   y_percent: 0
+      #   width_percent: 50
+      #   height_percent: 50
+      #   respect_taskbar: true
       
-      - name: "top"
-        x_percent: 0
-        y_percent: 0
-        width_percent: 100
-        height_percent: 50
-        respect_taskbar: true
+      # - name: "top"
+      #   x_percent: 0
+      #   y_percent: 0
+      #   width_percent: 100
+      #   height_percent: 50
+      #   respect_taskbar: true
       
-      - name: "top_right"
-        x_percent: 50
-        y_percent: 0
-        width_percent: 50
-        height_percent: 50
-        respect_taskbar: true
+      # - name: "top_right"
+      #   x_percent: 50
+      #   y_percent: 0
+      #   width_percent: 50
+      #   height_percent: 50
+      #   respect_taskbar: true
       
-      - name: "bottom_left"
-        x_percent: 0
-        y_percent: 50
-        width_percent: 50
-        height_percent: 50
-        respect_taskbar: true
+      # - name: "bottom_left"
+      #   x_percent: 0
+      #   y_percent: 50
+      #   width_percent: 50
+      #   height_percent: 50
+      #   respect_taskbar: true
       
-      - name: "bottom"
-        x_percent: 0
-        y_percent: 50
-        width_percent: 100
-        height_percent: 50
-        respect_taskbar: true
+      # - name: "bottom"
+      #   x_percent: 0
+      #   y_percent: 50
+      #   width_percent: 100
+      #   height_percent: 50
+      #   respect_taskbar: true
       
-      - name: "bottom_right"
-        x_percent: 50
-        y_percent: 50
-        width_percent: 50
-        height_percent: 50
-        respect_taskbar: true
+      # - name: "bottom_right"
+      #   x_percent: 50
+      #   y_percent: 50
+      #   width_percent: 50
+      #   height_percent: 50
+      #   respect_taskbar: true
 
   - id: 1
     name: "Secondary"

@@ -6,18 +6,18 @@ import tkinter as tk
 import os
 
 class TrayApp:
-    def __init__(self, zone_manager, hotkey_listener, config_dir, drag_listener=None):
+    def __init__(self, zone_manager, hotkey_listener, config_dir, drag_listener=None, overlay=None):
         self.zone_manager = zone_manager
         self.hotkey_listener = hotkey_listener
-        self.config_dir = config_dir  # Changed from config_path
+        self.config_dir = config_dir
         self.drag_listener = drag_listener
+        self.overlay = overlay  # ADD THIS
         self.icon = None
         self.hotkey_listener.tray_icon = None
     
     def create_icon_image(self):
         """Load icon from PNG file"""
         try:
-            # Get the directory where main.py is (project root)
             project_root = os.path.dirname(os.path.dirname(__file__))
             icon_path = os.path.join(project_root, 'resources', 'icon.png')
             image = Image.open(icon_path)
@@ -45,7 +45,7 @@ class TrayApp:
         """Reload configuration file and re-detect monitors"""
         try:
             print("\n=== Reloading Configuration ===")
-            self.zone_manager.load_config()  # This now reloads all yamls
+            self.zone_manager.load_config()
             self.hotkey_listener.restart()
             print("Configuration reloaded successfully\n")
             if self.icon:
@@ -72,10 +72,24 @@ class TrayApp:
     def quit_app(self, icon, item):
         """Quit the application"""
         print("Shutting down...")
+        
+        # CRITICAL: Clean up overlay windows first
+        if self.overlay:
+            try:
+                print("Destroying overlay windows...")
+                for w in self.overlay.windows:
+                    w.destroy()
+            except Exception as e:
+                print(f"Error destroying overlays: {e}")
+        
+        # Stop listeners
         self.hotkey_listener.stop()
         if self.drag_listener:
             self.drag_listener.stop()
+        
+        # Stop tray icon
         icon.stop()
+        print("Shutdown complete")
     
     def setup_tray_icon(self):
         """Create and configure system tray icon"""

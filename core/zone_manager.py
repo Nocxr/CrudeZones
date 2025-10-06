@@ -173,9 +173,31 @@ class ZoneManager:
             print(f"Zone {zone_name} not found on monitor {monitor_id}")
             return
         
-        # Save state if not already saved
-        if hwnd not in self.state_tracker.window_states:
-            self.state_tracker.save_state(hwnd)
+        # Mark operation in progress to prevent auto-restore during snap
+        self.state_tracker.mark_operation_in_progress(hwnd)
+        
+        # Check if window is currently snapped
+        is_currently_snapped = hwnd in self.state_tracker.snapped_windows
+        
+        # If NOT currently snapped, save state for first time
+        # If currently snapped, update the saved state to current size/position
+        if not is_currently_snapped:
+            # First snap - save current state
+            self.state_tracker.save_state(hwnd, force=False)
+        else:
+            # Re-snapping - get current rect and update saved state
+            try:
+                rect = win32gui.GetWindowRect(hwnd)
+                current_size = (rect[2] - rect[0], rect[3] - rect[1])
+                snapped_size = self.state_tracker.snapped_windows[hwnd][2:4]
+                
+                # Only update saved state if window was manually resized
+                # (current size differs from snapped size)
+                if current_size != snapped_size:
+                    self.state_tracker.save_state(hwnd, force=True)
+                    print(f"Updated saved state (window was resized before re-snap)")
+            except Exception as e:
+                print(f"Error checking window size: {e}")
         
         zone = self.monitors[monitor_id][zone_name]
         
@@ -200,6 +222,9 @@ class ZoneManager:
         
         print(f"Moved window to {zone_name} on monitor {monitor_id}")
         self.state_tracker.cleanup_old_states()
+        
+        # Unmark operation (with delay to allow animation to complete)
+        self.state_tracker.unmark_operation_in_progress(hwnd)
     
     def restore_window(self):
         """Restore the active window to its original size and position"""
@@ -249,6 +274,7 @@ class ZoneManager:
             print(f"No zones defined for monitor {monitor_id}")
             return
         
+        # Find current zone
         current_zone_idx = 0
         try:
             rect = win32gui.GetWindowRect(hwnd)
@@ -268,14 +294,15 @@ class ZoneManager:
         except:
             pass
         
+        # Calculate next zone (wrapping around)
         if direction == 'next':
             next_zone_idx = (current_zone_idx + 1) % len(zones)
-        else:
+        else:  # prev
             next_zone_idx = (current_zone_idx - 1) % len(zones)
         
         next_zone_name = zones[next_zone_idx]
         
-        print(f"Cycling {direction} to zone: {next_zone_name}")
+        print(f"Cycling {direction}: zone {current_zone_idx} -> {next_zone_idx} ({next_zone_name})")
         self.move_window_to_zone(monitor_id, next_zone_name)
         
     def cycle_zone_all_monitors(self, direction='next'):

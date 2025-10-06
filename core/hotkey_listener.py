@@ -140,8 +140,11 @@ class HotkeyListener:
                 vk_map = {
                     186: ';', 187: '=', 188: ',', 189: '-', 190: '.', 191: '/',
                     192: '`', 219: '[', 220: '\\', 221: ']', 222: "'",
+                    # F1-F24
                     112: 'f1', 113: 'f2', 114: 'f3', 115: 'f4', 116: 'f5', 117: 'f6',
                     118: 'f7', 119: 'f8', 120: 'f9', 121: 'f10', 122: 'f11', 123: 'f12',
+                    124: 'f13', 125: 'f14', 126: 'f15', 127: 'f16', 128: 'f17', 129: 'f18',
+                    130: 'f19', 131: 'f20', 132: 'f21', 133: 'f22', 134: 'f23', 135: 'f24',
                     33: 'page_up', 34: 'page_down', 35: 'end', 36: 'home',
                     37: 'left', 38: 'up', 39: 'right', 40: 'down',
                     45: 'insert', 46: 'delete',
@@ -267,11 +270,29 @@ class HotkeyListener:
         """Handle key release events"""
         self.current_keys.discard(key)
         
+        # Only clear fired hotkeys when ALL modifiers are released
+        # This allows repeat-firing of action keys (like [ and ])
         if key in [Key.ctrl, Key.ctrl_l, Key.ctrl_r, 
                    Key.alt, Key.alt_l, Key.alt_r,
                    Key.shift, Key.shift_l, Key.shift_r,
                    Key.cmd, Key.cmd_l, Key.cmd_r]:
-            self.hotkeys_fired.clear()
+            # Only clear if NO modifiers remain pressed
+            remaining_modifiers = [k for k in self.current_keys if k in [
+                Key.ctrl, Key.ctrl_l, Key.ctrl_r,
+                Key.alt, Key.alt_l, Key.alt_r, 
+                Key.shift, Key.shift_l, Key.shift_r,
+                Key.cmd, Key.cmd_l, Key.cmd_r
+            ]]
+            if not remaining_modifiers:
+                self.hotkeys_fired.clear()
+        else:
+            # Non-modifier key released - clear just that combo from fired set
+            # This allows repeat firing when you hold modifiers and tap the action key
+            combo = self._get_current_combo()
+            if combo:
+                # Remove any combos that contained this key
+                self.hotkeys_fired = {hk for hk in self.hotkeys_fired 
+                                     if self._get_key_name(key) not in hk.split('+')}
     
     def _execute_action(self, action, combo):
         """Execute the action associated with a hotkey"""
